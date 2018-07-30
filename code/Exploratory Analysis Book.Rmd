@@ -10,7 +10,7 @@ library(readr)
 library(stringr)
 library(tidyverse)
 library(tidytext)
-
+library(widyr)
 
 ```
 
@@ -22,22 +22,36 @@ getwd()
  fl_en_twitter <- read_lines("../../data/final/en_US/en_US.twitter.txt",locale = locale(encoding = "UTF-8")) 
 ```
 
-# Access Data
+# Access Data  
 ```{r}
-blogs_raw <- as_data_frame(fl_en_blogs)
-news_raw <- as_data_frame(fl_en_news)
-twitter_raw <- as_data_frame(fl_en_twitter)
+# Make Dataframes
+blogs_raw <- as_data_frame(fl_en_blogs) 
+#news_raw <- as_data_frame(fl_en_news)    
+#twitter_raw <- as_data_frame(fl_en_twitter)
 blogs_raw
 ```
 
 
 
-# Cleaning  
+# Cleaning  Dataset  
 ```{r}
 blogs_tokens <- blogs_raw %>% unnest_tokens( text,value)
 data(stop_words)
 blogs_clean <- blogs_tokens %>%
   anti_join(stop_words, by= c("text"="word"))
-blogs_clean
+
+blogs_clean %>% count(text, sort=TRUE)
+
+StopwordsList <- data_frame(stopwrds=as.character(1:10))
+
+blogs_clean <- blogs_tokens %>%
+  anti_join(stop_words, by= c("text"="word")) %>% 
+  anti_join(StopwordsList, by= c("text"="stopwrds")) 
+
+blogs_clean %>%  count(text, sort = TRUE)
+  
+
+blogsPairs <- blogs_tokens %>% pairwise_count(text,ID,sort=TRUE, upper=FALSE)
+
 ```
 
