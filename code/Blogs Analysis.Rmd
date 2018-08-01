@@ -1,0 +1,47 @@
+---
+title: "Blogs Data Analysis and Transformation"
+output: html_notebook
+---
+
+# Load LIbraries   
+```{r, Load Libraries}
+
+library(tm)
+library(readr)
+library(stringr)
+library(tidyverse)
+library(tidytext)
+library(widyr)
+data(stop_words)
+```
+
+# Load Data  
+```{r eval=FALSE, include=FALSE}
+
+DfBlogsRaw <- as_data_frame(read_lines("../../data/final/en_US/en_US.blogs.txt",locale = locale(encoding = "UTF-8")))
+
+```
+# Transforma Data  
+```{r, Transformation}
+
+BlogsTokens <- DfBlogsRaw %>% unnest_tokens( text,value)
+BlogsTokens$ID <- rownames(BlogsTokens)
+
+blogs_clean <- BlogsTokens %>%  anti_join(stop_words, by= c("text"="word"))  # Removing Stop Words
+
+blogs_clean %>% count(text, sort=TRUE)
+
+StopwordsList <- data_frame(stopwrds=as.character(1:10))
+
+BlogsClean <- BlogsTokens %>%
+  anti_join(stop_words, by= c("text"="word")) %>% 
+  anti_join(StopwordsList, by= c("text"="stopwrds")) 
+
+BlogsClean$ID <-  as.integer(rownames(BlogsClean))
+
+
+blogs_clean %>%  count(text, sort = TRUE)
+  
+
+BlogsPairs <- BlogsClean %>% pairwise_count(ID,text)
+```
