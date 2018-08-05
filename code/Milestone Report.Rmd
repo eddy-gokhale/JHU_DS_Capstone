@@ -1,0 +1,79 @@
+---
+title: "Milestone Report"
+output: html_document
+auther: "Abhishek Gokhale"  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+This is a milestone report for Capstone project of Data Science Specialization. In this report, we explore data, explain various features and summarize our findings in presentable fashion. We will also list out future plans for predictive modelling, and Shiny app.  
+
+# Exploratory Analysis  
+## Load Libraries  
+```{r message=FALSE, warning=FALSE}
+library(tm)
+library(readr)
+library(stringr)
+library(tidyverse)
+library(tidytext)
+library(widyr)
+library(parallel)
+library(doParallel)
+#library(RWeka)
+cluster <- makeCluster(detectCores() - 1)
+registerDoParallel(cluster)
+```
+
+## Load Data  
+We will load data from files and then get 10% sample of data for our further analysis.   
+```{r, Load Data}
+#getwd()
+#list.files("../../data/final/en_US")
+ fl_en_blogs <- read_lines("../../data/final/en_US/en_US.blogs.txt",locale = locale(encoding = "UTF-8"))
+ fl_en_news <- read_lines("../../data/final/en_US/en_US.news.txt",locale = locale(encoding = "UTF-8"))
+ fl_en_twitter <- read_lines("../../data/final/en_US/en_US.twitter.txt",locale = locale(encoding = "UTF-8")) 
+ 
+ #Load bad words from https://www.freewebheaders.com/full-list-of-bad-words-banned-by-google/
+ BadWords <- read_delim("~/Documents/R/data/full-list-of-bad-words_csv-file_2018_07_30.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE,col_names = FALSE)
+ BadWordsVector <- as.vector(BadWords$X1)
+ set.seed(1111)
+ SampleRawBlogs <- sample(fl_en_blogs,length(fl_en_blogs)*0.1)
+ SampleRawNews <-  sample(fl_en_news,length(fl_en_news)*0.1)
+ SampleRawTwitter <- sample(fl_en_twitter,length(fl_en_twitter)*0.1)
+ 
+ VSAllSampleData <- VectorSource(c(SampleRawBlogs,SampleRawNews,SampleRawTwitter))
+ SampleCorpus <- Corpus(VSAllSampleData)
+   
+```
+
+## Remove Unwanted Data Elements  
+```{r, Remove Unwanted Data}
+SampleCorpus <- tm_map(SampleCorpus, removePunctuation)
+SampleCorpus <- tm_map(SampleCorpus, removeNumbers)
+SampleCorpus <- tm_map(SampleCorpus, stripWhitespace)
+SampleCorpus <- tm_map(SampleCorpus, removeWords, stopwords("english"))
+SampleCorpus <- tm_map(SampleCorpus, removeWords, BadWordsVector)
+SampleCorpus <- tm_map(SampleCorpus, content_transformer(tolower))
+
+TDMSampleCorpus <- TermDocumentMatrix(SampleCorpus)
+#MTXSampleCorpus <- as.matrix(TDMSampleCorpus)
+```
+
+## Explore Term Document Matrix  
+```{r, Explore TDM}
+inspect(TDMSampleCorpus)
+dim(TDMSampleCorpus)
+length(unique(TDMSampleCorpus$dimnames$Terms))
+TDMSampleCorpus$nrow
+
+
+TDMSampleCorpusDense <- removeSparseTerms(TDMSampleCorpus,.99999)
+TDMSampleCorpusDense$dimnames$Terms
+dim(TDMSampleCorpusDense)
+
+```
+
