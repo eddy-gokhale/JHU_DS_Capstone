@@ -1,7 +1,7 @@
 ---
 title: "Milestone Report"
 output: html_document
-auther: "Abhishek Gokhale"  
+author: "Abhishek Gokhale"  
 ---
 
 ```{r setup, include=FALSE}
@@ -9,10 +9,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Overview
-This is a milestone report for Capstone project of Data Science Specialization. In this report, we explore data, explain various features and summarize our findings in presentable fashion. We will also list out future plans for predictive modelling, and Shiny app.  
+This is a milestone report for Capstone project of Data Science Specialization. In this report, I will Load Corpus files tidy dataset and explore it to explain various features in data. Futher down the document, I will also list out future plans for predictive modelling, and Shiny app.  
 
 # Exploratory Analysis  
+
 ## Load Libraries  
+Let's first load all required Libraries
 ```{r message=FALSE, warning=FALSE}
 library(tm)
 library(readr)
@@ -20,38 +22,55 @@ library(stringr)
 library(tidyverse)
 library(tidytext)
 library(widyr)
-library(parallel)
-library(doParallel)
-#library(RWeka)
-cluster <- makeCluster(detectCores() - 1)
-registerDoParallel(cluster)
 ```
 
 ## Load Data  
-We will load data from files and then get 10% sample of data for our further analysis.   
-```{r, Load Data}
+For purpose of anlysis and exploration, I had downloaded corpus files and [Bad words](https://www.freewebheaders.com/full-list-of-bad-words-banned-by-google/) file in data folder. Now, I will load corpus from  these files and then get 1% sample of corpus for our  analysis.   
+```{r Load Sample Corpus, message=FALSE, warning=FALSE}
 #getwd()
 #list.files("../../data/final/en_US")
  fl_en_blogs <- read_lines("../../data/final/en_US/en_US.blogs.txt",locale = locale(encoding = "UTF-8"))
  fl_en_news <- read_lines("../../data/final/en_US/en_US.news.txt",locale = locale(encoding = "UTF-8"))
  fl_en_twitter <- read_lines("../../data/final/en_US/en_US.twitter.txt",locale = locale(encoding = "UTF-8")) 
  
- #Load bad words from https://www.freewebheaders.com/full-list-of-bad-words-banned-by-google/
- BadWords <- read_delim("~/Documents/R/data/full-list-of-bad-words_csv-file_2018_07_30.csv", 
+ #Load bad words from 
+ BadWords <- read_delim("../../data/full-list-of-bad-words_csv-file_2018_07_30.csv", 
     ";", escape_double = FALSE, trim_ws = TRUE,col_names = FALSE)
  BadWordsVector <- as.vector(BadWords$X1)
- set.seed(1111)
- SampleRawBlogs <- sample(fl_en_blogs,length(fl_en_blogs)*0.1)
- SampleRawNews <-  sample(fl_en_news,length(fl_en_news)*0.1)
- SampleRawTwitter <- sample(fl_en_twitter,length(fl_en_twitter)*0.1)
  
+ # Setting seed for consistent reproducible results.
+ set.seed(1111)  
+
+ # Get 1% Sample of corpus
+ SampleRawBlogs <- sample(fl_en_blogs,length(fl_en_blogs)*0.01)
+ SampleRawNews <-  sample(fl_en_news,length(fl_en_news)*0.01)
+ SampleRawTwitter <- sample(fl_en_twitter,length(fl_en_twitter)*0.01)
+ 
+ 
+ # Convert non-ASCII characters
+ SampleRawBlogs <- iconv(SampleRawBlogs, "latin1","ASCII",sub="")
+ SampleRawNews <- iconv(SampleRawNews, "latin1","ASCII",sub="")
+ SampleRawTwitter <- iconv(SampleRawTwitter, "latin1","ASCII",sub="")
+  
  VSAllSampleData <- VectorSource(c(SampleRawBlogs,SampleRawNews,SampleRawTwitter))
+ 
+ #Create corpus
  SampleCorpus <- Corpus(VSAllSampleData)
+ 
+ 
    
 ```
 
+## Basis Files Stats  
+```{r Basic File Stats}
+BasicStats <- cbind(c("Blogs", "News", "Twitter"),c(length(fl_en_blogs),length(fl_en_news),length(fl_en_twitter)),round(c(object.size(fl_en_blogs)/1024/1024,object.size(fl_en_news)/1024/1024,object.size(fl_en_twitter)/1024/1024),1), c(max(nchar(fl_en_blogs)),max(nchar(fl_en_news)),max(nchar(fl_en_twitter))))
+colnames(BasicStats) <- c("File Name", "Line Count","Object Size(MB)","Max. Character Length/Line")
+as_data_frame( BasicStats)
+```
+
 ## Remove Unwanted Data Elements  
-```{r, Remove Unwanted Data}
+Now, I will remove punctuations, numbers,whaitespaces, some english stopwords and bad words. Then create term document matrix using cleaned corpus. 
+```{r Clean Corpus, message=FALSE, warning=FALSE}
 SampleCorpus <- tm_map(SampleCorpus, removePunctuation)
 SampleCorpus <- tm_map(SampleCorpus, removeNumbers)
 SampleCorpus <- tm_map(SampleCorpus, stripWhitespace)
@@ -60,20 +79,58 @@ SampleCorpus <- tm_map(SampleCorpus, removeWords, BadWordsVector)
 SampleCorpus <- tm_map(SampleCorpus, content_transformer(tolower))
 
 TDMSampleCorpus <- TermDocumentMatrix(SampleCorpus)
-#MTXSampleCorpus <- as.matrix(TDMSampleCorpus)
 ```
 
 ## Explore Term Document Matrix  
-```{r, Explore TDM}
-inspect(TDMSampleCorpus)
-dim(TDMSampleCorpus)
-length(unique(TDMSampleCorpus$dimnames$Terms))
-TDMSampleCorpus$nrow
+In this section we will explore Uni-Grams and Bi-Grams.  
 
+### Unigrams  
 
-TDMSampleCorpusDense <- removeSparseTerms(TDMSampleCorpus,.99999)
-TDMSampleCorpusDense$dimnames$Terms
-dim(TDMSampleCorpusDense)
+```{r Unigrams, fig.width=10, message=TRUE, warning=FALSE, fig.asp=.67   }
+
+# Remove sparsity 
+TDMSampleCorpusDense <- removeSparseTerms(TDMSampleCorpus,.9999)
+
+#TDMSampleCorpusDense$dimnames$Terms
+#dim(TDMSampleCorpusDense)
+
+# Get UniGram frequencies 
+TokenFreq <- as.data.frame(sort(rowSums(as.matrix(TDMSampleCorpusDense)), decreasing = TRUE), keep.rownames=YRUE )
+TokenFreq$words <- rownames(TokenFreq)
+colnames(TokenFreq) <- c("freq","words")
+
+#Plot UniGram frequencies
+ggplot(head(TokenFreq,25), aes(x= reorder(words,-freq), y=freq)) +geom_bar(fill="lightseagreen",stat = "identity")+
+  xlab("Unigrams")+ylab("Frequency")+
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
 
+### Bi-Grams 
+```{r Bi-Grams, fig.width=10, message=FALSE, warning=FALSE, fig.asp=.67}
+                                       
+SampleCorpusDf <- data.frame(text=sapply(SampleCorpus, identity), stringsAsFactors=F)
+
+BiGramDf <- SampleCorpusDf %>% unnest_tokens(bigram,text,token = "ngrams",n=2)
+BiGramDfFreq <- BiGramDf %>% count(bigram,sort = TRUE)
+
+
+ggplot(head(BiGramDfFreq,25), aes(x= reorder(bigram,-n), y=n)) +geom_bar(fill="lightseagreen",stat = "identity")+
+  xlab("Bigrams")+ylab("Frequency")+
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+ 
+### Tri-Grams  
+```{r Tri-Grams, fig.width=10, message=FALSE, warning=FALSE, fig.asp=.67}
+TriGramDf <- SampleCorpusDf %>% unnest_tokens(Trigram,text,token = "ngrams",n=3)
+TriGramDfFreq <- TriGramDf %>% count(Trigram,sort = TRUE)
+
+
+ggplot(head(TriGramDfFreq,25), aes(x= reorder(Trigram,-n), y=n)) +geom_bar(fill="lightseagreen",stat = "identity")+
+  xlab("Trigrams")+ylab("Frequency")+
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Future Plans  
+ For Predictive model, I am planning to increase my sample size from 1% to get more variety and better results. My current Bi-Grams and Tri-Grams starts or contains 'I'. I would like to explore other bi/Tri- Grams. I am also planning  my shiny app which will have a user input, display for user's entered text. Shiny app will also provide all Lemma for a word selected by user. 
