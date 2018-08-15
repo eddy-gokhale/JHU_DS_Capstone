@@ -1,0 +1,73 @@
+---
+title: "NLP Text Processings"
+output: html_notebook
+---
+
+# Load Libraries
+```{r}
+library(stringr)
+```
+
+
+# Load Initial Data
+```{r}
+set.seed(1111)  
+
+ # Get 1% Sample of corpus
+ SampleRawBlogs <- sample(fl_en_blogs,length(fl_en_blogs)*1)
+ SampleRawNews <-  sample(fl_en_news,length(fl_en_news)*1)
+ SampleRawTwitter <- sample(fl_en_twitter,length(fl_en_twitter)*1)
+ 
+ 
+ # Convert non-ASCII characters
+ SampleRawBlogs <- iconv(SampleRawBlogs, "latin1","ASCII",sub="")
+ SampleRawNews <- iconv(SampleRawNews, "latin1","ASCII",sub="")
+ SampleRawTwitter <- iconv(SampleRawTwitter, "latin1","ASCII",sub="")
+ 
+ SampleRaw <- c(SampleRawBlogs,SampleRawNews,SampleRawTwitter)
+ SampleRawDF <- as_data_frame(SampleRaw)
+ #SampleRawDF$value
+names(SampleRawDF) <- c("Text")
+
+```
+
+# Process Text Processing
+```{r}
+
+RemoveData <- function(x){
+  x <- gsub("[0-9]"," ",x)    # REMOVE NUMBERS
+  x <- gsub("\\.\\.+"," ",x) # REMOVE CONSECUTIVE DOTS.
+  x <- gsub("[^a-zA-Z]"," ",x) # REMOVE NON-ALPHA Characters
+  x <- gsub(" [ +]"," ",x)  # Convert Multiple Spaces to one
+  x <- unlist(str_split(x," "))  ## 1112363 1027241
+  x <- x[which(nchar(x)>1)]
+  x <- tolower(x)
+  x <- 
+  as.data.frame(x, stringsAsFactors=FALSE)
+}
+
+SampleCleanDF <- sapply(SampleRawDF,RemoveData, simplify = FALSE)
+
+SampleCleanDF
+class(SampleCleanDF)
+SampleCleanDF1 <- as.data.frame(SampleCleanDF, stringsAsFactors = FALSE)
+stopwrds <- as.data.frame(stopwords("en"),stringsAsFactors=FALSE)
+names(stopwrds) <- c("words")
+
+SampleCleanDF1 %>% anti_join(stopwrds,by=c("x"="words"))  %>% group_by(x) %>% summarise(c=n()) %>% arrange(desc(c))
+
+
+```
+
+# Get Some Stats  
+```{r}
+SampleCleanDF %>% group_by(Text)%>% summarise(Count=n())
+```
+
+# sfjdfdkj;dg
+```{r}
+tidybg <- SampleRawDF %>% unnest_tokens(bg,Text,token = "ngrams",n=2)
+tidytg <- SampleRawDF %>% unnest_tokens(tg,Text,token = "ngrams",n=3)
+tidyttg <- SampleRawDF %>% unnest_tokens(ttg,Text,token = "ngrams",n=4)
+```
+
