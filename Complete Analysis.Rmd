@@ -1,0 +1,49 @@
+---
+title: "COmplete Analysis_Project"
+output: html_notebook
+---
+
+```{r}
+library(tm)
+library(readr)
+library(stringr)
+library(tidyverse)
+library(tidytext)
+library(widyr)
+```
+
+
+Load All Files.
+```{r}
+ fl_en_blogs <- read_lines("../../data/final/en_US/en_US.blogs.txt",locale = locale(encoding = "UTF-8"))
+ fl_en_news <- read_lines("../../data/final/en_US/en_US.news.txt",locale = locale(encoding = "UTF-8"))
+ fl_en_twitter <- read_lines("../../data/final/en_US/en_US.twitter.txt",locale = locale(encoding = "UTF-8")) 
+ 
+ set.seed(1111)
+  # Get 80% Sample of corpus
+ SampleRawBlogs <- fl_en_blogs[sample(seq_len(length(fl_en_blogs)),length(fl_en_blogs)*.8)]
+  set.seed(1111)
+ SampleRawNews <-  fl_en_news[sample(seq_len(length(fl_en_news)),length(fl_en_news)*.8)]
+  set.seed(1111)
+ SampleRawTwitter <- fl_en_twitter[sample(seq_len(length(fl_en_twitter)),length(fl_en_twitter)*.8)]
+ 
+  # Get 20% Testing Corpus
+set.seed(1111)
+ TestRawBlogs <- fl_en_blogs[-sample(seq_len(length(fl_en_blogs)),length(fl_en_blogs)*.8)]
+ set.seed(1111)
+ TestRawNews <-  fl_en_news[-sample(seq_len(length(fl_en_news)),length(fl_en_news)*.8)]
+ set.seed(1111)
+ TestRawTwitter <- fl_en_twitter[-sample(seq_len(length(fl_en_twitter)),length(fl_en_twitter)*.8)]
+ getwd()
+save(list=c("SampleRawBlogs","SampleRawNews","SampleRawTwitter"),file = "../data/Sample.RData" )
+save(list=c("TestRawBlogs","TestRawNews","TestRawTwitter"),file = "../data/Test.RData" ) 
+rm(list = ls())
+
+```
+
+```{r}
+load(file = "../data/Sample.RData")
+
+
+```
+

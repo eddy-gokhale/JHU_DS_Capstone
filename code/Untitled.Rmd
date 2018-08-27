@@ -14,9 +14,9 @@ library(stringr)
 set.seed(1111)  
 
  # Get 1% Sample of corpus
- SampleRawBlogs <- sample(fl_en_blogs,length(fl_en_blogs)*1)
- SampleRawNews <-  sample(fl_en_news,length(fl_en_news)*1)
- SampleRawTwitter <- sample(fl_en_twitter,length(fl_en_twitter)*1)
+ SampleRawBlogs <- sample(fl_en_blogs,length(fl_en_blogs)*.6)
+ SampleRawNews <-  sample(fl_en_news,length(fl_en_news)*.6)
+ SampleRawTwitter <- sample(fl_en_twitter,length(fl_en_twitter)*.6)
  
  
  # Convert non-ASCII characters

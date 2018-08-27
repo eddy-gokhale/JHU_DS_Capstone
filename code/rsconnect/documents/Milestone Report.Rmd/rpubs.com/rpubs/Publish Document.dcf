@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/410243/95adfed170704d61822dc7ff3205bb42
+bundleId: https://api.rpubs.com/api/v1/document/410243/95adfed170704d61822dc7ff3205bb42
+url: http://rpubs.com/AbhiGokh4/410243
+when: 1533526879.49213
