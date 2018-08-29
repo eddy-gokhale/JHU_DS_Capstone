@@ -15,17 +15,17 @@ library(widyr)
 
 Load All Files.
 ```{r}
- fl_en_blogs <- read_lines("../../data/final/en_US/en_US.blogs.txt",locale = locale(encoding = "UTF-8"))
- fl_en_news <- read_lines("../../data/final/en_US/en_US.news.txt",locale = locale(encoding = "UTF-8"))
- fl_en_twitter <- read_lines("../../data/final/en_US/en_US.twitter.txt",locale = locale(encoding = "UTF-8")) 
+ fl_en_blogs <- read_lines("../data/final/en_US/en_US.blogs.txt",locale = locale(encoding = "UTF-8"))
+ fl_en_news <- read_lines("../data/final/en_US/en_US.news.txt",locale = locale(encoding = "UTF-8"))
+ fl_en_twitter <- read_lines("../data/final/en_US/en_US.twitter.txt",locale = locale(encoding = "UTF-8")) 
  
  set.seed(1111)
   # Get 80% Sample of corpus
- SampleRawBlogs <- fl_en_blogs[sample(seq_len(length(fl_en_blogs)),length(fl_en_blogs)*.8)]
+ SampleRawBlogs <- fl_en_blogs[sample(seq_len(length(fl_en_blogs)),length(fl_en_blogs)*.6)]
   set.seed(1111)
- SampleRawNews <-  fl_en_news[sample(seq_len(length(fl_en_news)),length(fl_en_news)*.8)]
+ SampleRawNews <-  fl_en_news[sample(seq_len(length(fl_en_news)),length(fl_en_news)*.6)]
   set.seed(1111)
- SampleRawTwitter <- fl_en_twitter[sample(seq_len(length(fl_en_twitter)),length(fl_en_twitter)*.8)]
+ SampleRawTwitter <- fl_en_twitter[sample(seq_len(length(fl_en_twitter)),length(fl_en_twitter)*.6)]
  
   # Get 20% Testing Corpus
 set.seed(1111)
@@ -36,14 +36,69 @@ set.seed(1111)
  TestRawTwitter <- fl_en_twitter[-sample(seq_len(length(fl_en_twitter)),length(fl_en_twitter)*.8)]
  getwd()
 save(list=c("SampleRawBlogs","SampleRawNews","SampleRawTwitter"),file = "../data/Sample.RData" )
-save(list=c("TestRawBlogs","TestRawNews","TestRawTwitter"),file = "../data/Test.RData" ) 
+#save(list=c("TestRawBlogs","TestRawNews","TestRawTwitter"),file = "../data/Test.RData" ) 
 rm(list = ls())
-
+gc()
 ```
 
 ```{r}
 load(file = "../data/Sample.RData")
+ SampleRaw <- c(SampleRawBlogs,SampleRawNews,SampleRawTwitter)
+ SampleRawDF <- as_data_frame(SampleRaw)
+names(SampleRawDF) <- c("Text")
+
+RemoveData <- function(x){
+  x <- gsub("[0-9]"," ",x)    # REMOVE NUMBERS
+  x <- gsub("\\.\\.+"," ",x) # REMOVE CONSECUTIVE DOTS.
+  x <- gsub("[^a-zA-Z]"," ",x) # REMOVE NON-ALPHA Characters
+  x <- gsub(" [ +]"," ",x)  # Convert Multiple Spaces to one
+#  x <- unlist(str_split(x," "))  ## 1112363 1027241
+#  x <- x[which(nchar(x)>1)]
+  x <- tolower(x)
+  x <-as.data.frame(x, stringsAsFactors=FALSE)
+}
+
+SampleCleanDF <- as.data.frame(sapply(SampleRawDF,RemoveData, simplify = FALSE), stringsAsFactors = FALSE)
+saveRDS(SampleCleanDF,"../data/SampleCleanDF.RDS")
+rm(list = ls())
+gc()
 
 
+```
+
+```{r}
+SampleCleanDF <- readRDS("../data/SampleCleanDF.RDS")
+names(SampleCleanDF) <- c("Text")
+
+tidybg <- SampleCleanDF %>% unnest_tokens(bg,Text,token = "ngrams",n=2)
+saveRDS(tidybg,"../data/tidybg.RDS")   #432,787
+rm(list = c("tidybg"))
+tidytg <- SampleCleanDF %>% unnest_tokens(tg,Text,token = "ngrams",n=3)
+saveRDS(tidytg,"../data/tidytg.RDS")
+rm(list = c("tidytg"))
+tidyttg <- SampleCleanDF %>% unnest_tokens(ttg,Text,token = "ngrams",n=4)
+saveRDS(tidyttg,"../data/tidyttg.RDS")
+rm(list = c("tidyttg"))
+```
+
+```{r}
+tidybg <- readRDS("../data/tidybg.RDS")
+  
+  Splitbg <- function(x){
+    Word1 <- as.factor(unlist(str_split(x," "))[1])
+    Word2 <- as.factor(unlist(str_split(x," "))[2])
+    row <- cbind(Word1,Word2)
+    row
+  }
+  
+  bigramrow <- as.data.frame(sapply(tidybg, Splitbg))
+bigramrow<-tidybg %>% separate(bg,into=c("Word1","Word2"),sep = " ")
+  
+bgfreq <- tidybg  %>% count(bg,sort = TRUE)
+bgfreq$Wrd1 <- unlist(str_split(tidybg$bg," "))[1]
+
+
+word1 <- unlist(str_split(tidybg$bg," "))[1]
+#word2 <- unlist(str_split(tidybg$bg," "))[2]
 ```
 
