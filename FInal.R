@@ -1,5 +1,14 @@
+library(tm)
+library(readr)
+library(stringr)
+library(tidyverse)
+library(tidytext)
+library(widyr)
 
-SampleRawBlogs <- as_data_frame(SampleRawBlogs)
+
+fl_en_blogs <- read_lines("../data/final/en_US/en_US.blogs.txt",locale = locale(encoding = "UTF-8"))
+set.seed(1111)
+SampleRawBlogs <- as_data_frame(iconv(sample(fl_en_blogs,length(fl_en_blogs)*0.8), "latin1","ASCII",sub=""))
 names(SampleRawBlogs) <- c("Text")
 
 
@@ -20,8 +29,7 @@ SampleCleanDF <- as.data.frame(sapply(SampleRawBlogs,RemoveData, simplify = FALS
 
 names(SampleCleanDF) <- c("Text")
 
-tidybg <- SampleCleanDF %>% unnest_tokens(bg,Text,token = "ngrams",n=2) %>% separate(bg,into=c("Word1","Word2"),sep = " ")
-%>% group_by(word1,word2) %>% summarise(Cnt=n())
+#tidybg <- SampleCleanDF %>% unnest_tokens(bg,Text,token = "ngrams",n=2) %>% separate(bg,into=c("Word1","Word2"),sep = " ") %>% group_by(word1,word2) %>% summarise(Cnt=n())
 
 
 tidybgcnt <- SampleCleanDF %>% unnest_tokens(bg,Text,token = "ngrams",n=2) %>% separate(bg,into=c("Word1","Word2"),sep = " ") %>% group_by(Word1,Word2) %>% summarise(Cnt=n())
